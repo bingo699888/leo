@@ -33,6 +33,7 @@ async function initDB() {
       CREATE TABLE IF NOT EXISTS blood_data (
         id SERIAL PRIMARY KEY,
         current_call INTEGER DEFAULT 0,
+        event_image TEXT,
         last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       CREATE TABLE IF NOT EXISTS announcements (
@@ -110,12 +111,13 @@ async function handleAPI(req, res, url) {
     try {
       const p = getPool();
       const [callRes, annRes] = await Promise.all([
-        p.query('SELECT current_call, last_updated FROM blood_data ORDER BY id DESC LIMIT 1'),
+        p.query('SELECT current_call, event_image, last_updated FROM blood_data ORDER BY id DESC LIMIT 1'),
         p.query('SELECT id, content FROM announcements ORDER BY sort_order'),
       ]);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         currentCall: callRes.rows[0]?.current_call || 0,
+        eventImage: callRes.rows[0]?.event_image || '',
         lastUpdated: callRes.rows[0]?.last_updated,
         announcements: annRes.rows.map(r => ({ id: r.id, content: r.content })),
       }));

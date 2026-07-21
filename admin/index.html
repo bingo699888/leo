@@ -147,6 +147,13 @@
 
       <!-- 公告管理 -->
       <div class="section">
+      <!-- 活動圖片 -->
+      <div class="section">
+        <div class="section-title">🖼️ 活動圖片 URL</div>
+        <input type="text" id="eventImageInput" placeholder="輸入圖片網址，例如 https://..." style="width:100%;padding:12px;border:2px solid #ddd;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+        <div style="font-size:12px;color:#aaa;margin-top:6px;">圖片建議尺寸：寬度 800px 以上</div>
+      </div>
+
         <div class="section-title">📋 公告管理</div>
         <div id="annList"></div>
         <button class="add-ann-btn" onclick="addAnn()">＋ 新增公告</button>
@@ -195,6 +202,7 @@
     const d = await resp.json();
     currentCall = d.currentCall || 0;
     announcements = (d.announcements || []).map(a => a.content);
+    if (d.eventImage) document.getElementById('eventImageInput').value = d.eventImage;
     render();
   }
 
@@ -255,12 +263,18 @@
       if (v) announcements.push(v);
     });
 
-    const resp = await fetch('/api/update-announcements', {
+    const eventImage = document.getElementById('eventImageInput').value.trim();
+    const resp1 = await fetch('/api/update-event-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventImage, password })
+    });
+    const resp2 = await fetch('/api/update-announcements', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ announcements, password })
     });
-    const r = await resp.json();
+    const r = await resp2.json();
     const msg = document.getElementById('saveMsg');
     if (r.ok) {
       msg.textContent = '✅ 儲存成功！';
