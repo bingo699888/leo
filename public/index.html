@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🩸 鹽水獅子會 捐血叫號</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background: linear-gradient(135deg, #e8f5e9 0%, #fff8e1 50%, #fce4ec 100%);
+      min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    }
+    .header {
+      background: linear-gradient(135deg, #c62828, #e53935); color: white;
+      text-align: center; padding: 20px 16px; width: 100%;
+      box-shadow: 0 4px 16px rgba(198,40,40,0.3);
+    }
+    .header .org { font-size: 13px; opacity: 0.9; letter-spacing: 2px; }
+    .header h1 { font-size: 20px; margin-top: 4px; letter-spacing: 3px; }
+    .main-card {
+      background: white; border-radius: 24px; padding: 32px 24px;
+      margin: -20px 16px 16px; width: calc(100% - 32px);
+      max-width: 480px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); text-align: center;
+    }
+    .call-label { font-size: 13px; color: #999; letter-spacing: 3px; margin-bottom: 8px; }
+    .call-number { font-size: 88px; font-weight: 900; color: #c62828; line-height: 1;
+                   text-shadow: 2px 2px 0 #ffcdd2; }
+    .call-unit { font-size: 20px; color: #c62828; margin-top: 4px; }
+    .status-badge {
+      display: inline-block; background: #4caf50; color: white;
+      padding: 6px 20px; border-radius: 20px; font-size: 13px; margin-top: 14px;
+    }
+    .status-badge.waiting { background: #ff9800; }
+    .announce-section { margin-top: 24px; text-align: left; }
+    .announce-title {
+      font-size: 15px; font-weight: bold; color: #333; margin-bottom: 12px;
+      padding-left: 12px; border-left: 4px solid #c62828;
+    }
+    .announce-list { list-style: none; }
+    .announce-list li {
+      background: #fff8e1; border-radius: 12px; padding: 14px 16px;
+      margin-bottom: 10px; font-size: 14px; color: #333; border-left: 4px solid #ffb300;
+    }
+    .info-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+    .info-card { background: #f5f5f5; border-radius: 16px; padding: 16px; text-align: center; }
+    .info-card .value { font-size: 26px; font-weight: bold; color: #c62828; }
+    .info-card .label { font-size: 12px; color: #888; margin-top: 4px; }
+    .footer { margin-top: auto; padding: 20px; text-align: center; font-size: 12px; color: #aaa; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+    .live-dot { display:inline-block; width:8px; height:8px; background:#4caf50; border-radius:50%; margin-right:6px; animation: pulse 1.5s infinite; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="org">國際獅子會 300-D1 區</div>
+  <h1>🩸 鹽水獅子會 捐血活動</h1>
+</div>
+
+<div class="main-card">
+  <div class="call-label">現 在 叫 到</div>
+  <div class="call-number" id="callNumber">--</div>
+  <div class="call-unit" id="callUnit">號</div>
+  <div class="status-badge waiting" id="statusBadge">⏳ 等待叫號</div>
+
+  <div class="announce-section">
+    <div class="announce-title">📢 最新公告</div>
+    <ul class="announce-list" id="announceList"></ul>
+  </div>
+
+  <div class="info-cards">
+    <div class="info-card">
+      <div class="value" id="registeredCount">--</div>
+      <div class="label">已登記人數</div>
+    </div>
+    <div class="info-card">
+      <div class="value" id="activityDate">--</div>
+      <div class="label">活動日期</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  國際獅子會 300-D1 區 鹽水獅子會<br>🩸 用熱血傳遞愛心
+</div>
+
+<script>
+  const EL = {
+    num: document.getElementById('callNumber'),
+    badge: document.getElementById('statusBadge'),
+    list: document.getElementById('announceList'),
+    reg: document.getElementById('registeredCount'),
+    date: document.getElementById('activityDate'),
+  };
+
+  async function loadData() {
+    try {
+      const resp = await fetch('/api/data');
+      if (!resp.ok) throw new Error('API error');
+      const d = await resp.json();
+      if (d.currentCall > 0) {
+        EL.num.textContent = d.currentCall;
+        EL.badge.className = 'status-badge';
+        EL.badge.innerHTML = '<span class="live-dot"></span>Live 更新中';
+      }
+      if (d.announcements && d.announcements.length > 0) {
+        EL.list.innerHTML = d.announcements.map(a =>
+          `<li>${a.content || a}</li>`
+        ).join('');
+      }
+      if (d.registeredCount !== undefined) {
+        EL.reg.textContent = d.registeredCount;
+      }
+    } catch(e) {
+      // fallback - 保持顯示 "--"
+    }
+  }
+
+  EL.date.textContent = new Date().toLocaleDateString('zh-TW', {
+    year:'numeric', month:'long', day:'numeric'
+  });
+
+  loadData();
+  setInterval(loadData, 30000);
+</script>
+</body>
+</html>

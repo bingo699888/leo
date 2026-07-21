@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔧 管理後台 - 鹽水獅子會捐血叫號</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background: #f0f0f0;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 600px; margin: 0 auto; }
+
+    .login-card {
+      background: white; border-radius: 16px; padding: 32px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1); text-align: center;
+    }
+    .login-card h2 { font-size: 20px; margin-bottom: 20px; color: #333; }
+    .login-card input {
+      width: 100%; padding: 14px; border: 2px solid #ddd;
+      border-radius: 10px; font-size: 18px; text-align: center;
+      margin-bottom: 16px; outline: none;
+    }
+    .login-card input:focus { border-color: #c62828; }
+    .login-card button {
+      width: 100%; padding: 14px; background: #c62828; color: white;
+      border: none; border-radius: 10px; font-size: 16px; cursor: pointer;
+    }
+    .login-card button:hover { background: #b71c1c; }
+    .login-card .hint { font-size: 12px; color: #aaa; margin-top: 12px; }
+    .login-error { color: #e53935; font-size: 14px; margin-top: 10px; }
+
+    .admin-panel { display: none; }
+    .admin-panel.active { display: block; }
+
+    .panel-header {
+      background: linear-gradient(135deg, #c62828, #e53935);
+      color: white; border-radius: 16px 16px 0 0;
+      padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .panel-header h2 { font-size: 18px; }
+    .logout-btn { background: rgba(255,255,255,0.2); color: white; border: none;
+                   padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+    .logout-btn:hover { background: rgba(255,255,255,0.3); }
+
+    .panel-body { background: white; border-radius: 0 0 16px 16px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+
+    .section { margin-bottom: 32px; }
+    .section-title {
+      font-size: 15px; font-weight: bold; color: #333;
+      margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #f0f0f0;
+    }
+
+    .call-display {
+      background: #fff8e1; border-radius: 12px; padding: 20px;
+      text-align: center; margin-bottom: 14px;
+    }
+    .call-display .label { font-size: 13px; color: #888; margin-bottom: 6px; }
+    .call-display .number { font-size: 64px; font-weight: 900; color: #c62828; line-height: 1; }
+    .call-display .unit { font-size: 18px; color: #c62828; }
+
+    .call-input-row { display: flex; gap: 10px; }
+    .call-input-row input {
+      flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 10px; font-size: 18px; outline: none;
+    }
+    .call-input-row input:focus { border-color: #c62828; }
+    .call-input-row button {
+      padding: 12px 20px; background: #c62828; color: white;
+      border: none; border-radius: 10px; font-size: 15px; cursor: pointer; white-space: nowrap;
+    }
+    .call-input-row button:hover { background: #b71c1c; }
+
+    .ann-item {
+      display: flex; gap: 8px; margin-bottom: 10px; align-items: flex-start;
+    }
+    .ann-item textarea {
+      flex: 1; padding: 10px; border: 2px solid #ddd; border-radius: 8px;
+      font-size: 14px; resize: none; outline: none; font-family: inherit;
+    }
+    .ann-item textarea:focus { border-color: #c62828; }
+    .ann-item .del-btn {
+      padding: 10px 12px; background: #ffebee; color: #c62828;
+      border: none; border-radius: 8px; cursor: pointer; font-size: 16px;
+    }
+    .ann-item .del-btn:hover { background: #ffcdd2; }
+
+    .add-ann-btn {
+      width: 100%; padding: 12px; background: #f5f5f5; color: #666;
+      border: 2px dashed #ccc; border-radius: 10px; cursor: pointer; font-size: 14px;
+    }
+    .add-ann-btn:hover { border-color: #c62828; color: #c62828; }
+
+    .save-btn {
+      width: 100%; padding: 16px; background: #4caf50; color: white;
+      border: none; border-radius: 12px; font-size: 16px; cursor: pointer;
+    }
+    .save-btn:hover { background: #388e3c; }
+
+    .msg { font-size: 13px; margin-top: 10px; text-align: center; }
+    .msg.ok { color: #4caf50; }
+    .msg.err { color: #e53935; }
+
+    .live-status {
+      display: inline-block; background: #4caf50; color: white;
+      padding: 4px 12px; border-radius: 12px; font-size: 12px; margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 登入畫面 -->
+  <div class="login-card" id="loginCard">
+    <h2>🔐 管理後台登入</h2>
+    <input type="password" id="passwordInput" placeholder="請輸入管理密碼" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">登 入</button>
+    <div class="hint">預設密碼：0000（登入後可修改）</div>
+    <div class="login-error" id="loginError"></div>
+  </div>
+
+  <!-- 管理面板 -->
+  <div class="admin-panel" id="adminPanel">
+    <div class="panel-header">
+      <h2>🔧 管理後台</h2>
+      <button class="logout-btn" onclick="logout()">登出</button>
+    </div>
+    <div class="panel-body">
+
+      <span class="live-status">✅ 已連線</span>
+
+      <!-- 叫號更新 -->
+      <div class="section">
+        <div class="section-title">📢 叫號更新</div>
+        <div class="call-display">
+          <div class="label">目前叫到</div>
+          <div class="number" id="currentCallDisplay">--</div>
+          <div class="unit">號</div>
+        </div>
+        <div class="call-input-row">
+          <input type="number" id="newCallInput" placeholder="輸入新號碼，例如 160">
+          <button onclick="updateCall()">更新</button>
+        </div>
+      </div>
+
+      <!-- 公告管理 -->
+      <div class="section">
+        <div class="section-title">📋 公告管理</div>
+        <div id="annList"></div>
+        <button class="add-ann-btn" onclick="addAnn()">＋ 新增公告</button>
+      </div>
+
+      <button class="save-btn" onclick="saveAll()">💾 儲存所有變更</button>
+      <div class="msg" id="saveMsg"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let password = '';
+  let currentCall = 0;
+  let announcements = [];
+
+  async function doLogin() {
+    const pwd = document.getElementById('passwordInput').value;
+    if (!pwd) return;
+    const resp = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pwd })
+    });
+    const r = await resp.json();
+    if (r.ok) {
+      password = pwd;
+      document.getElementById('loginCard').style.display = 'none';
+      document.getElementById('adminPanel').classList.add('active');
+      loadData();
+    } else {
+      document.getElementById('loginError').textContent = '⚠️ ' + r.message;
+    }
+  }
+
+  function logout() {
+    password = '';
+    document.getElementById('adminPanel').classList.remove('active');
+    document.getElementById('loginCard').style.display = 'block';
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('loginError').textContent = '';
+  }
+
+  async function loadData() {
+    const resp = await fetch('/api/data');
+    const d = await resp.json();
+    currentCall = d.currentCall || 0;
+    announcements = (d.announcements || []).map(a => a.content);
+    render();
+  }
+
+  function render() {
+    document.getElementById('currentCallDisplay').textContent = currentCall || '尚未開始';
+    renderAnns();
+  }
+
+  function renderAnns() {
+    const el = document.getElementById('annList');
+    el.innerHTML = announcements.map((c, i) => `
+      <div class="ann-item">
+        <textarea rows="2" id="ann${i}" value="${c.replace(/"/g,'&quot;')}">${c}</textarea>
+        <button class="del-btn" onclick="delAnn(${i})">✕</button>
+      </div>
+    `).join('');
+  }
+
+  function addAnn() {
+    announcements.push('');
+    renderAnns();
+    document.getElementById('ann' + (announcements.length - 1)).focus();
+  }
+
+  function delAnn(i) {
+    announcements.splice(i, 1);
+    renderAnns();
+  }
+
+  async function updateCall() {
+    const val = parseInt(document.getElementById('newCallInput').value);
+    if (!val || val <= 0) return;
+    const resp = await fetch('/api/update-call', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ call: val, password })
+    });
+    const r = await resp.json();
+    const msg = document.getElementById('saveMsg');
+    if (r.ok) {
+      currentCall = r.currentCall;
+      document.getElementById('newCallInput').value = '';
+      msg.textContent = '✅ 已更新為 ' + r.currentCall + ' 號';
+      msg.className = 'msg ok';
+      render();
+    } else {
+      msg.textContent = '⚠️ ' + r.message;
+      msg.className = 'msg err';
+    }
+    setTimeout(() => { msg.textContent = ''; }, 3000);
+  }
+
+  async function saveAll() {
+    // 收集公告
+    announcements = [];
+    document.querySelectorAll('.ann-item textarea').forEach(el => {
+      const v = el.value.trim();
+      if (v) announcements.push(v);
+    });
+
+    const resp = await fetch('/api/update-announcements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ announcements, password })
+    });
+    const r = await resp.json();
+    const msg = document.getElementById('saveMsg');
+    if (r.ok) {
+      msg.textContent = '✅ 儲存成功！';
+      msg.className = 'msg ok';
+    } else {
+      msg.textContent = '⚠️ ' + r.message;
+      msg.className = 'msg err';
+    }
+    setTimeout(() => { msg.textContent = ''; }, 3000);
+  }
+</script>
+</body>
+</html>
