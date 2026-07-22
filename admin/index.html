@@ -29,12 +29,10 @@
     .login-card input:focus { border-color: #c62828; }
     .login-card button {
       width: 100%; padding: 16px; background: #c62828; color: white;
-      border: none; border-radius: 12px; font-size: 16px; cursor: pointer;
-      font-weight: bold;
+      border: none; border-radius: 12px; font-size: 16px; cursor: pointer; font-weight: bold;
     }
     .login-card button:hover { background: #b71c1c; }
     .login-error { color: #e53935; font-size: 14px; margin-top: 12px; }
-    .login-hint { font-size: 13px; color: #999; margin-top: 16px; }
 
     /* 管理面板 */
     .admin-panel { display: none; }
@@ -99,8 +97,7 @@
     .ann-item { display: flex; gap: 8px; margin-bottom: 10px; align-items: flex-start; }
     .ann-item textarea {
       flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px;
-      font-size: 14px; resize: none; outline: none; font-family: inherit;
-      background: #fff;
+      font-size: 14px; resize: none; outline: none; font-family: inherit; background: #fff;
     }
     .ann-item textarea:focus { border-color: #c62828; }
     .ann-item .del-btn {
@@ -114,18 +111,32 @@
     }
     .add-ann-btn:hover { border-color: #c62828; color: #c62828; }
 
-    /* 活動圖片 */
+    /* 活動圖片上傳 */
     .image-preview {
       width: 100%; max-height: 200px; object-fit: cover;
       border-radius: 12px; margin-bottom: 10px; display: none;
     }
     .image-preview.visible { display: block; }
-    .image-input {
-      width: 100%; padding: 12px; border: 2px solid #e0e0e0;
-      border-radius: 10px; font-size: 14px; outline: none; box-sizing: border-box;
+    .upload-area {
+      border: 2px dashed #ccc; border-radius: 12px; padding: 24px; text-align: center;
+      cursor: pointer; transition: border-color 0.2s;
     }
-    .image-input:focus { border-color: #c62828; }
+    .upload-area:hover { border-color: #c62828; }
+    .upload-area .icon { font-size: 32px; margin-bottom: 8px; }
+    .upload-area .text { font-size: 14px; color: #888; }
+    .upload-area .text span { color: #c62828; text-decoration: underline; }
+    .image-url-row { display: flex; gap: 8px; margin-top: 10px; }
+    .image-url-row input {
+      flex: 1; padding: 10px 12px; border: 2px solid #e0e0e0;
+      border-radius: 10px; font-size: 14px; outline: none;
+    }
+    .image-url-row input:focus { border-color: #c62828; }
+    .image-url-row button {
+      padding: 10px 16px; background: #1565c0; color: white;
+      border: none; border-radius: 10px; cursor: pointer; font-size: 14px;
+    }
     .image-hint { font-size: 12px; color: #aaa; margin-top: 6px; }
+    #imageInput { display: none; }
 
     /* 儲存 */
     .save-btn {
@@ -139,7 +150,20 @@
     .msg.ok { color: #2e7d32; background: #e8f5e9; }
     .msg.err { color: #c62828; background: #ffebee; }
 
+    /* 密碼變更 */
+    .password-section { margin-top: 24px; }
+    .password-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .password-row input {
+      flex: 1; padding: 10px 12px; border: 2px solid #e0e0e0;
+      border-radius: 8px; font-size: 14px; outline: none;
+    }
+    .password-row input:focus { border-color: #c62828; }
+    .password-row button {
+      padding: 10px 16px; background: #1565c0; color: white;
+      border: none; border-radius: 8px; cursor: pointer; font-size: 13px;
+    }
 
+    /* 帳號管理 */
     .user-item {
       display: flex; align-items: center; gap: 8px;
       background: #f5f5f5; border-radius: 10px; padding: 10px 14px; margin-bottom: 8px;
@@ -157,10 +181,11 @@
     .user-item .del-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .add-user-btn {
       width: 100%; padding: 14px; background: white; color: #666;
-      border: 2px dashed #ccc; border-radius: 12px; cursor: pointer; font-size: 14px;
-      margin-top: 8px;
+      border: 2px dashed #ccc; border-radius: 12px; cursor: pointer; font-size: 14px; margin-top: 8px;
     }
     .add-user-btn:hover { border-color: #c62828; color: #c62828; }
+
+    /* Modal */
     .modal-overlay {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;
@@ -184,36 +209,20 @@
       flex: 1; padding: 14px; background: #c62828; color: white;
       border: none; border-radius: 12px; cursor: pointer; font-size: 15px; font-weight: bold;
     }
-
-    /* 密碼變更 */
-    .password-section { margin-top: 24px; }
-    .password-row { display: flex; gap: 8px; margin-bottom: 8px; }
-    .password-row input {
-      flex: 1; padding: 10px 12px; border: 2px solid #e0e0e0;
-      border-radius: 8px; font-size: 14px; outline: none;
-    }
-    .password-row input:focus { border-color: #c62828; }
-    .password-row button {
-      padding: 10px 16px; background: #1565c0; color: white;
-      border: none; border-radius: 8px; cursor: pointer; font-size: 13px;
-    }
-
-    /* 說明文字 */
     .info-text { font-size: 12px; color: #999; margin-bottom: 10px; }
-    .info-text a { color: #c62828; }
   </style>
 </head>
 <body>
 <div class="container">
 
-  <!-- 登入畫面 -->
+  <!-- 登入 -->
   <div class="login-card" id="loginCard">
     <div class="logo">🩸</div>
     <h2>管理後台登入</h2>
     <input type="password" id="passwordInput" placeholder="請輸入管理密碼" onkeydown="if(event.key==='Enter')doLogin()">
     <button onclick="doLogin()">登 入</button>
     <div class="login-error" id="loginError"></div>
-    <div class="login-hint">超級管理者預設密碼：0000</div>
+    <div class="login-hint" style="font-size:13px;color:#999;margin-top:16px;">超級管理者預設密碼：0000</div>
   </div>
 
   <!-- 管理面板 -->
@@ -229,7 +238,7 @@
 
       <span class="connected-badge">✅ 已連線</span>
 
-      <!-- 叫號更新（所有管理者可用）-->
+      <!-- 叫號更新 -->
       <div class="card">
         <div class="card-title">📢 叫號更新</div>
         <div class="call-display">
@@ -241,55 +250,79 @@
           <input type="number" id="newCallInput" placeholder="輸入新號碼，例如 160">
           <button onclick="updateCall()">更新</button>
         </div>
-        <div class="call-note">一般管理者與超級管理者皆可更新叫號</div>
+        <div class="call-note">一般管理者與超級管理者皆可使用</div>
       </div>
 
       <!-- 超級管理者專區 -->
-      <div class="super-only" id="superSection" style="display:none;">
+      <div id="superSection" style="display:none;">
 
-        <!-- 活動圖片 -->
+        <!-- 活動圖片上傳 -->
         <div class="card">
           <div class="card-title">🖼️ 活動圖片</div>
-          <img class="image-preview" id="imagePreview" src="" alt="活動圖片預覽">
-          <input type="text" class="image-input" id="eventImageInput" placeholder="輸入圖片網址，例如 https://..." oninput="previewImage()">
-          <div class="image-hint">圖片建議尺寸：寬度 800px 以上，直接貼上圖片連結即可</div>
+          <img class="image-preview" id="imagePreview" src="" alt="預覽" onclick="document.getElementById('imageInput').click()">
+          <div class="upload-area" onclick="document.getElementById('imageInput').click()">
+            <div class="icon">📷</div>
+            <div class="text">點擊上傳圖片，或<span>選擇檔案</span></div>
+          </div>
+          <input type="file" id="imageInput" accept="image/*" onchange="handleImageSelect(this)">
+          <div class="image-url-row">
+            <input type="text" id="imageUrlInput" placeholder="或直接輸入圖片網址" oninput="handleUrlInput(this)">
+            <button onclick="saveImageUrl()">使用網址</button>
+          </div>
+          <div class="image-hint">支援 JPG/PNG/GIF，圖片建議寬度 800px 以上</div>
+          <div class="msg" id="uploadMsg" style="margin-top:10px;"></div>
         </div>
 
         <!-- 公告管理 -->
         <div class="card">
           <div class="card-title">📋 公告管理</div>
-          <div class="info-text">新增或編輯公告內容，前台將自動顯示</div>
+          <div class="info-text">新增或編輯公告，前台將自動顯示</div>
           <div id="annList"></div>
           <button class="add-ann-btn" onclick="addAnn()">＋ 新增公告</button>
         </div>
 
+        <!-- 帳號管理 -->
+        <div class="card">
+          <div class="card-title">👥 帳號管理</div>
+          <div id="userList"></div>
+          <button class="add-user-btn" onclick="showAddUserModal()">＋ 新增管理者帳號</button>
+        </div>
+
+        <!-- 密碼變更 -->
+        <div class="card">
+          <div class="card-title">🔐 變更密碼（超級管理者）</div>
+          <div class="password-row">
+            <input type="password" id="oldPwdInput" placeholder="舊密碼">
+            <input type="password" id="newPwdInput" placeholder="新密碼（至少4位）">
+            <button onclick="changePassword()">變更</button>
+          </div>
+          <div class="msg" id="pwdMsg"></div>
+        </div>
+
       </div>
 
-      <button class="save-btn" id="saveBtn" onclick="saveAll()">💾 儲存所有變更</button>
+      <button class="save-btn" id="saveBtn" onclick="saveAll()">💾 儲存公告變更</button>
       <div class="msg" id="saveMsg"></div>
 
-
-      <!-- 帳號管理（超級管理者） -->
-      <div class="card super-only" id="userSection" style="display:none;">
-        <div class="card-title">👥 帳號管理</div>
-        <div id="userList"></div>
-        <button class="add-user-btn" onclick="showAddUserModal()">＋ 新增管理者帳號</button>
-      </div>
-
-      <!-- 超級管理者：密碼變更 -->
-      <div class="password-section super-only" id="pwdSection" style="display:none;">
-        <div class="card-title">🔐 變更密碼（超級管理者）</div>
-
-        <div class="card-title">🔐 變更密碼（超級管理者）</div>
-        <div class="password-row">
-          <input type="password" id="oldPwdInput" placeholder="舊密碼">
-          <input type="password" id="newPwdInput" placeholder="新密碼（至少4位）">
-          <button onclick="changePassword()">變更</button>
-        </div>
-        <div class="msg" id="pwdMsg"></div>
-      </div>
-
     </div>
+  </div>
+</div>
+
+<!-- 新增帳號 Modal -->
+<div class="modal-overlay" id="addUserModal">
+  <div class="modal-box">
+    <h3>＋ 新增管理者帳號</h3>
+    <input type="text" id="newUsername" placeholder="帳號名稱">
+    <input type="password" id="newUserPwd" placeholder="登入密碼（至少4位）">
+    <select id="newUserRole">
+      <option value="normal">👤 一般管理者（只能輸入號碼）</option>
+      <option value="super">⭐ 超級管理者（全部功能）</option>
+    </select>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="closeAddUserModal()">取消</button>
+      <button class="btn-confirm" onclick="doAddUser()">新增</button>
+    </div>
+    <div class="msg" id="addUserMsg" style="margin-top:12px;"></div>
   </div>
 </div>
 
@@ -299,6 +332,7 @@
   let currentCall = 0;
   let announcements = [];
   let eventImage = '';
+  let pendingImageFile = null;
 
   async function doLogin() {
     const pwd = document.getElementById('passwordInput').value;
@@ -314,15 +348,11 @@
       currentRole = r.role || 'normal';
       document.getElementById('loginCard').style.display = 'none';
       document.getElementById('adminPanel').classList.add('active');
-      document.getElementById('roleBadge').textContent = currentRole === 'super' ? '⭐ 超級管理者' : '👤 一般管理者';
-
-      if (currentRole === 'super') {
-        document.querySelectorAll('.super-only').forEach(el => el.style.display = 'block');
-        loadUsers();
-      } else {
-        document.querySelectorAll('.super-only').forEach(el => el.style.display = 'none');
-      }
+      document.getElementById('roleBadge').textContent =
+        currentRole === 'super' ? '⭐ 超級管理者' : '👤 一般管理者';
+      document.getElementById('superSection').style.display = currentRole === 'super' ? 'block' : 'none';
       loadData();
+      if (currentRole === 'super') loadUsers();
     } else {
       document.getElementById('loginError').textContent = '⚠️ ' + (r.message || '密碼錯誤');
     }
@@ -342,37 +372,29 @@
     const d = await resp.json();
     currentCall = d.currentCall || 0;
     eventImage = d.eventImage || '';
-    announcements = (d.announcements || []).map(a => a.content);
+    announcements = (d.announcements || []).map(a => a.content || a);
     render();
   }
 
   function render() {
     document.getElementById('currentCallDisplay').textContent = currentCall || '尚未開始';
-    document.getElementById('eventImageInput').value = eventImage;
-    document.getElementById('imagePreview').src = eventImage;
-    document.getElementById('imagePreview').className = 'image-preview' + (eventImage ? ' visible' : '');
+    const preview = document.getElementById('imagePreview');
+    preview.src = eventImage;
+    preview.className = 'image-preview' + (eventImage ? ' visible' : '');
+    document.getElementById('imageUrlInput').value = eventImage;
     renderAnns();
   }
 
-  function previewImage() {
-    const src = document.getElementById('eventImageInput').value.trim();
-    const img = document.getElementById('imagePreview');
-    img.src = src;
-    img.className = 'image-preview' + (src ? ' visible' : '');
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
   function renderAnns() {
     const el = document.getElementById('annList');
-    el.innerHTML = announcements.map((c, i) => `
-      <div class="ann-item">
-        <textarea rows="2" id="ann${i}">${esc(c)}</textarea>
-        <button class="del-btn" onclick="delAnn(${i})">✕</button>
-      </div>
-    `).join('');
-  }
-
-  function esc(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    el.innerHTML = announcements.map((c, i) =>
+      '<div class="ann-item"><textarea rows="2" id="ann' + i + '">' + esc(c) + '</textarea>' +
+      '<button class="del-btn" onclick="delAnn(' + i + ')">✕</button></div>'
+    ).join('');
   }
 
   function addAnn() {
@@ -390,19 +412,18 @@
   async function updateCall() {
     const val = parseInt(document.getElementById('newCallInput').value);
     if (!val || val <= 0) return;
-    const resp = await fetch('/api/update-call', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ call: val, password })
-    });
+    const formData = new FormData();
+    formData.append('call', val);
+    formData.append('admin_password', password);
+    const resp = await fetch('/api/update-call', { method: 'POST', body: formData });
     const r = await resp.json();
     const msg = document.getElementById('saveMsg');
     if (r.ok) {
       currentCall = r.currentCall;
       document.getElementById('newCallInput').value = '';
+      document.getElementById('currentCallDisplay').textContent = currentCall;
       msg.textContent = '✅ 已更新為 ' + r.currentCall + ' 號';
       msg.className = 'msg ok';
-      document.getElementById('currentCallDisplay').textContent = currentCall;
     } else {
       msg.textContent = '⚠️ ' + (r.message || '更新失敗');
       msg.className = 'msg err';
@@ -410,43 +431,90 @@
     setTimeout(() => { msg.textContent = ''; }, 3000);
   }
 
-  async function saveAll() {
-    // 一般管理者只能儲存叫號
-    if (currentRole !== 'super') {
-      const msg = document.getElementById('saveMsg');
-      msg.textContent = '⚠️ 一般管理者無法儲存其他設定';
-      msg.className = 'msg err';
-      setTimeout(() => { msg.textContent = ''; }, 3000);
-      return;
-    }
+  // 圖片選擇
+  function handleImageSelect(input) {
+    if (!input.files || !input.files[0]) return;
+    pendingImageFile = input.files[0];
+    // 預覽
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const preview = document.getElementById('imagePreview');
+      preview.src = e.target.result;
+      preview.className = 'image-preview visible';
+    };
+    reader.readAsDataURL(pendingImageFile);
+    // 直接上傳
+    uploadImage(pendingImageFile);
+  }
 
-    // 收集公告
+  function handleUrlInput(input) {
+    eventImage = input.value;
+    const preview = document.getElementById('imagePreview');
+    preview.src = eventImage;
+    preview.className = 'image-preview' + (eventImage ? ' visible' : '');
+  }
+
+  async function uploadImage(file) {
+    const msgEl = document.getElementById('uploadMsg');
+    msgEl.textContent = '⏳ 上傳中...';
+    msgEl.className = 'msg';
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('admin_password', password);
+    try {
+      const resp = await fetch('/api/upload-image', { method: 'POST', body: formData });
+      const r = await resp.json();
+      if (r.ok) {
+        eventImage = r.url;
+        document.getElementById('imageUrlInput').value = eventImage;
+        msgEl.textContent = '✅ 上傳成功！';
+        msgEl.className = 'msg ok';
+      } else {
+        msgEl.textContent = '⚠️ ' + (r.message || '上傳失敗');
+        msgEl.className = 'msg err';
+      }
+    } catch(e) {
+      msgEl.textContent = '⚠️ 上傳失敗：' + e.message;
+      msgEl.className = 'msg err';
+    }
+    setTimeout(() => { msgEl.textContent = ''; }, 4000);
+  }
+
+  async function saveImageUrl() {
+    const url = document.getElementById('imageUrlInput').value.trim();
+    eventImage = url;
+    const formData = new FormData();
+    formData.append('event_image', url);
+    formData.append('admin_password', password);
+    const resp = await fetch('/api/update-event-image', { method: 'POST', body: formData });
+    const r = await resp.json();
+    const msgEl = document.getElementById('uploadMsg');
+    if (r.ok) {
+      msgEl.textContent = '✅ 圖片已設定';
+      msgEl.className = 'msg ok';
+    } else {
+      msgEl.textContent = '⚠️ ' + (r.message || '設定失敗');
+      msgEl.className = 'msg err';
+    }
+    setTimeout(() => { msgEl.textContent = ''; }, 3000);
+  }
+
+  async function saveAll() {
+    if (currentRole !== 'super') return;
     announcements = [];
     document.querySelectorAll('.ann-item textarea').forEach(el => {
       const v = el.value.trim();
       if (v) announcements.push(v);
     });
-    const img = document.getElementById('eventImageInput').value.trim();
-
-    const [r1, r2] = await Promise.all([
-      fetch('/api/update-event-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ eventImage: img, password })
-      }),
-      fetch('/api/update-announcements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ announcements, password })
-      })
-    ]);
-    const r = await r2.json();
+    const formData = new FormData();
+    formData.append('announcements', JSON.stringify(announcements));
+    formData.append('admin_password', password);
+    const resp = await fetch('/api/update-announcements', { method: 'POST', body: formData });
+    const r = await resp.json();
     const msg = document.getElementById('saveMsg');
     if (r.ok) {
       msg.textContent = '✅ 儲存成功！';
       msg.className = 'msg ok';
-      eventImage = img;
-      document.getElementById('imagePreview').src = eventImage;
     } else {
       msg.textContent = '⚠️ ' + (r.message || '儲存失敗');
       msg.className = 'msg err';
@@ -458,47 +526,105 @@
     const oldPwd = document.getElementById('oldPwdInput').value;
     const newPwd = document.getElementById('newPwdInput').value;
     if (!newPwd || newPwd.length < 4) {
-      document.getElementById('pwdMsg').textContent = '⚠️ 新密碼至少4位';
-      document.getElementById('pwdMsg').className = 'msg err';
+      const m = document.getElementById('pwdMsg');
+      m.textContent = '⚠️ 新密碼至少4位';
+      m.className = 'msg err';
+      setTimeout(() => { m.textContent = ''; }, 3000);
       return;
     }
     const resp = await fetch('/api/update-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ oldPassword: oldPwd, newPassword: newPwd, password })
+      body: JSON.stringify({ oldPassword: oldPwd, newPassword: newPwd, admin_password: password })
     });
     const r = await resp.json();
-    const msg = document.getElementById('pwdMsg');
+    const m = document.getElementById('pwdMsg');
     if (r.ok) {
-      msg.textContent = '✅ 密碼已更改';
-      msg.className = 'msg ok';
+      m.textContent = '✅ 密碼已更改';
+      m.className = 'msg ok';
       document.getElementById('oldPwdInput').value = '';
       document.getElementById('newPwdInput').value = '';
     } else {
-      msg.textContent = '⚠️ ' + (r.message || '更改失敗');
-      msg.className = 'msg err';
+      m.textContent = '⚠️ ' + (r.message || '更改失敗');
+      m.className = 'msg err';
     }
-    setTimeout(() => { msg.textContent = ''; }, 3000);
+    setTimeout(() => { m.textContent = ''; }, 3000);
+  }
+
+  // ── 帳號管理 ──
+  async function loadUsers() {
+    if (currentRole !== 'super') return;
+    const resp = await fetch('/api/admin/users?admin_password=' + encodeURIComponent(password));
+    const d = await resp.json();
+    renderUsers(d.users || []);
+  }
+
+  function renderUsers(users) {
+    const el = document.getElementById('userList');
+    el.innerHTML = users.map(u => {
+      const isSelf = u.username === 'admin';
+      return '<div class="user-item">' +
+        '<div class="info"><span class="name">' + esc(u.username) + (isSelf ? '（自己）' : '') + '</span>' +
+        '<span class="role-tag ' + u.role + '">' + (u.role === 'super' ? '⭐ 超級管理者' : '👤 一般管理者') + '</span></div>' +
+        (isSelf ? '<button class="del-btn" disabled>✕</button>' :
+         '<button class="del-btn" onclick="delUser(' + u.id + ')">✕</button>') +
+        '</div>';
+    }).join('');
+  }
+
+  function showAddUserModal() {
+    document.getElementById('addUserModal').classList.add('active');
+    document.getElementById('newUsername').value = '';
+    document.getElementById('newUserPwd').value = '';
+    document.getElementById('newUserRole').value = 'normal';
+    document.getElementById('addUserMsg').textContent = '';
+    document.getElementById('newUsername').focus();
+  }
+
+  function closeAddUserModal() {
+    document.getElementById('addUserModal').classList.remove('active');
+  }
+
+  async function doAddUser() {
+    const username = document.getElementById('newUsername').value.trim();
+    const pwd = document.getElementById('newUserPwd').value;
+    const role = document.getElementById('newUserRole').value;
+    if (!username || username.length < 2) {
+      const m = document.getElementById('addUserMsg');
+      m.textContent = '⚠️ 帳號至少2個字元';
+      m.className = 'msg err';
+      return;
+    }
+    if (!pwd || pwd.length < 4) {
+      const m = document.getElementById('addUserMsg');
+      m.textContent = '⚠️ 密碼至少4位';
+      m.className = 'msg err';
+      return;
+    }
+    const resp = await fetch('/api/admin/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password: pwd, role, admin_password: password })
+    });
+    const r = await resp.json();
+    const m = document.getElementById('addUserMsg');
+    if (r.ok) {
+      m.textContent = '✅ ' + r.message;
+      m.className = 'msg ok';
+      setTimeout(() => { closeAddUserModal(); loadUsers(); }, 1000);
+    } else {
+      m.textContent = '⚠️ ' + (r.message || '新增失敗');
+      m.className = 'msg err';
+    }
+  }
+
+  async function delUser(id) {
+    if (!confirm('確定要刪除這個帳號嗎？')) return;
+    const resp = await fetch('/api/admin/users/' + id + '?admin_password=' + encodeURIComponent(password), { method: 'DELETE' });
+    const r = await resp.json();
+    if (r.ok) { loadUsers(); }
+    else { alert('⚠️ ' + (r.message || '刪除失敗')); }
   }
 </script>
-
-<!-- 新增帳號 Modal -->
-<div class="modal-overlay" id="addUserModal">
-  <div class="modal-box">
-    <h3>＋ 新增管理者帳號</h3>
-    <input type="text" id="newUsername" placeholder="帳號名稱（英文或數字）">
-    <input type="password" id="newUserPwd" placeholder="登入密碼（至少4位）">
-    <select id="newUserRole">
-      <option value="normal">👤 一般管理者（只能輸入號碼）</option>
-      <option value="super">⭐ 超級管理者（全部功能）</option>
-    </select>
-    <div class="btn-row">
-      <button class="btn-cancel" onclick="closeAddUserModal()">取消</button>
-      <button class="btn-confirm" onclick="doAddUser()">新增</button>
-    </div>
-    <div class="msg" id="addUserMsg" style="margin-top:12px;"></div>
-  </div>
-</div>
-
 </body>
 </html>
