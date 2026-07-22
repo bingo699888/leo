@@ -9,23 +9,33 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif;
       background: linear-gradient(135deg, #e8f5e9 0%, #fff8e1 50%, #fce4ec 100%);
-      min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     .header {
-      background: linear-gradient(135deg, #c62828, #e53935); color: white;
-      text-align: center; padding: 20px 16px; width: 100%;
+      background: linear-gradient(135deg, #c62828, #e53935);
+      color: white;
+      text-align: center;
+      padding: 20px 16px;
+      width: 100%;
       box-shadow: 0 4px 16px rgba(198,40,40,0.3);
     }
     .header .org { font-size: 13px; opacity: 0.9; letter-spacing: 2px; }
     .header h1 { font-size: 20px; margin-top: 4px; letter-spacing: 3px; }
     .main-card {
-      background: white; border-radius: 24px; padding: 32px 24px;
-      margin: -20px 16px 16px; width: calc(100% - 32px);
-      max-width: 480px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); text-align: center;
+      background: white;
+      border-radius: 24px;
+      padding: 32px 24px;
+      margin: -20px 16px 16px;
+      width: calc(100% - 32px);
+      max-width: 480px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      text-align: center;
     }
     .call-label { font-size: 13px; color: #999; letter-spacing: 3px; margin-bottom: 8px; }
-    .call-number { font-size: 88px; font-weight: 900; color: #c62828; line-height: 1;
-                   text-shadow: 2px 2px 0 #ffcdd2; }
+    .call-number { font-size: 88px; font-weight: 900; color: #c62828; line-height: 1; text-shadow: 2px 2px 0 #ffcdd2; }
     .call-unit { font-size: 20px; color: #c62828; margin-top: 4px; }
     .status-badge {
       display: inline-block; background: #4caf50; color: white;
@@ -45,9 +55,10 @@
     .footer { margin-top: auto; padding: 20px; text-align: center; font-size: 12px; color: #aaa; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
     .live-dot { display:inline-block; width:8px; height:8px; background:#4caf50; border-radius:50%; margin-right:6px; animation: pulse 1.5s infinite; }
-    .event-image { margin-top: 16px; width: calc(100% - 32px); max-width: 480px; }
+    .event-image { margin: 16px 0; width: 100%; max-width: 480px; }
     .event-image img { width: 100%; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); display: none; }
     .event-image img.visible { display: block; }
+    .update-info { font-size: 11px; color: #bbb; margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -58,60 +69,98 @@
 </div>
 
 <div class="main-card">
-  <div class="call-label">現 在 叫 到</div>
+  <div class="call-label">目前叫到</div>
   <div class="call-number" id="callNumber">--</div>
-  <div class="call-unit" id="callUnit">號</div>
+  <div class="call-unit">號</div>
   <div class="status-badge waiting" id="statusBadge">⏳ 等待叫號</div>
 
-  <div class="announce-section">
+  <!-- 活動圖片 -->
+  <div class="event-image">
+    <img id="eventImg" src="" alt="活動圖片">
+  </div>
+
+  <!-- 公告 -->
+  <div class="announce-section" id="announceSection">
     <div class="announce-title">📢 最新公告</div>
-    <ul class="announce-list" id="announceList"></ul>
+    <ul class="announce-list" id="announceList">
+      <li>載入中...</li>
+    </ul>
   </div>
 </div>
 
-<!-- 活動圖片區 -->
-<div class="event-image">
-  <img id="eventImage" src="" alt="活動圖片">
-</div>
-
 <div class="footer">
-  國際獅子會 300-E1 區 臺南市鹽水獅子會<br>🩸 用熱血傳遞愛心
+  <div><span class="live-dot"></span>每分鐘自動更新</div>
+  <div class="update-info" id="updateInfo"></div>
 </div>
 
 <script>
-  const EL = {
-    num: document.getElementById('callNumber'),
-    badge: document.getElementById('statusBadge'),
-    list: document.getElementById('announceList'),
-  };
-  const eventImg = document.getElementById('eventImage');
+  const REFRESH_INTERVAL = 60000; // 1 分鐘
 
   async function loadData() {
     try {
-      const resp = await fetch('/api/data');
-      if (!resp.ok) throw new Error('API error');
+      const resp = await fetch('/api/data?_=' + Date.now());
+      if (!resp.ok) throw new Error('network error');
       const d = await resp.json();
-      if (d.currentCall > 0) {
-        EL.num.textContent = d.currentCall;
-        EL.badge.className = 'status-badge';
-        EL.badge.innerHTML = '<span class="live-dot"></span>Live 更新中';
-      }
-      if (d.announcements && d.announcements.length > 0) {
-        EL.list.innerHTML = d.announcements.map(a =>
-          `<li>${a.content || a}</li>`
-        ).join('');
-      }
-      if (d.eventImage) {
-        eventImg.src = d.eventImage;
-        eventImg.classList.add('visible');
-      }
+      updateUI(d);
     } catch(e) {
-      // fallback - 保持顯示 "--"
+      document.getElementById('updateInfo').textContent = '⚠️ 無法取得資料';
     }
   }
 
+  function updateUI(d) {
+    const num = d.currentCall || 0;
+    document.getElementById('callNumber').textContent = num === 0 ? '--' : num;
+
+    const badge = document.getElementById('statusBadge');
+    if (num === 0) {
+      badge.className = 'status-badge waiting';
+      badge.textContent = '⏳ 等待叫號';
+    } else {
+      badge.className = 'status-badge';
+      badge.textContent = '✅ 叫號中';
+    }
+
+    // 活動圖片
+    const img = document.getElementById('eventImg');
+    if (d.eventImage) {
+      img.src = d.eventImage;
+      img.className = 'visible';
+    } else {
+      img.className = '';
+    }
+
+    // 公告
+    const list = document.getElementById('announceList');
+    if (d.announcements && d.announcements.length > 0) {
+      list.innerHTML = d.announcements.map(a =>
+        '<li>' + escHtml(a.content || a) + '</li>'
+      ).join('');
+    } else {
+      list.innerHTML = '<li>目前沒有公告</li>';
+    }
+
+    // 更新時間
+    if (d.lastUpdated) {
+      const t = new Date(d.lastUpdated);
+      const now = new Date();
+      const diff = Math.floor((now - t) / 1000);
+      if (diff < 60) {
+        document.getElementById('updateInfo').textContent = '📡 最後更新：' + diff + ' 秒前';
+      } else {
+        document.getElementById('updateInfo').textContent = '📡 最後更新：' + Math.floor(diff/60) + ' 分鐘前';
+      }
+    }
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // 初始載入
   loadData();
-  setInterval(loadData, 30000);
+  // 每分鐘自動更新
+  setInterval(loadData, REFRESH_INTERVAL);
 </script>
+
 </body>
 </html>

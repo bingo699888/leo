@@ -29,7 +29,6 @@ async function initDB() {
   const p = getPool();
   const client = await p.connect();
   try {
-    // 建立 blood_data（含 event_image）
     await client.query(`
       CREATE TABLE IF NOT EXISTS blood_data (
         id SERIAL PRIMARY KEY,
@@ -38,7 +37,8 @@ async function initDB() {
         last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    // Migration: 確認 event_image 欄位存在
+
+    // Migration: 確保 event_image 欄位存在
     try {
       const colCheck = await client.query(
         `SELECT column_name FROM information_schema.columns WHERE table_name='blood_data' AND column_name='event_image'`
@@ -47,9 +47,8 @@ async function initDB() {
         await client.query(`ALTER TABLE blood_data ADD COLUMN event_image TEXT`);
         console.log('✅ event_image 欄位已新增');
       }
-    } catch(e) { console.log('欄位檢查略過:', e.message); }
+    } catch(e) { /* ignore */ }
 
-    // 建立 announcements
     await client.query(`
       CREATE TABLE IF NOT EXISTS announcements (
         id SERIAL PRIMARY KEY,
@@ -59,14 +58,35 @@ async function initDB() {
       )
     `);
 
-    // 建立 admin
     await client.query(`
       CREATE TABLE IF NOT EXISTS admin (
         id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL DEFAULT 'admin',
         password_hash TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'normal',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Migration: 確保 role 欄位存在（舊資料庫）
+    try {
+      const roleCheck = await client.query(
+        `SELECT column_name FROM information_schema.columns WHERE table_name='admin' AND column_name='role'`
+      );
+      if (roleCheck.rows.length === 0) {
+        await client.query(`ALTER TABLE admin ADD COLUMN role TEXT NOT NULL DEFAULT 'normal'`);
+      }
+    } catch(e) { /* ignore */ }
+
+    // Migration: 確保 username 欄位存在
+    try {
+      const userCheck = await client.query(
+        `SELECT column_name FROM information_schema.columns WHERE table_name='admin' AND column_name='username'`
+      );
+      if (userCheck.rows.length === 0) {
+        await client.query(`ALTER TABLE admin ADD COLUMN username TEXT UNIQUE NOT NULL DEFAULT 'admin'`);
+      }
+    } catch(e) { /* ignore */ }
 
     const c = await client.query('SELECT COUNT(*) FROM blood_data');
     if (parseInt(c.rows[0].count) === 0) {
@@ -84,7 +104,7 @@ async function initDB() {
     const ad = await client.query('SELECT COUNT(*) FROM admin');
     if (parseInt(ad.rows[0].count) === 0) {
       const hash = crypto.createHash('sha256').update('0000').digest('hex');
-      await client.query('INSERT INTO admin (password_hash) VALUES ($1)', [hash]);
+      await client.query('INSERT INTO admin (username, password_hash, role) VALUES ($1, $2, $3)', ['admin', hash, 'super']);
     }
     console.log('✅ 資料庫初始化完成');
   } finally {
@@ -92,21 +112,21 @@ async function initDB() {
   }
 }
 
-// ── 密碼驗證 ─────────────────────────────────
 function verifyPassword(input, storedHash) {
   const hash = crypto.createHash('sha256').update(input).digest('hex');
   return hash === storedHash;
 }
 
-// ── MIME 類型 ─────────────────────────────────
 const MIME = {
   '.html': 'text/html; charset=utf-8',
-  '.js': 'application/javascript',
+  '.js': 'application/json',
   '.css': 'text/css',
   '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.svg': 'image/svg+xml',
 };
 
-// ── 靜態檔案 ─────────────────────────────────
 function serveFile(res, filePath, mime) {
   fs.readFile(filePath, (err, data) => {
     if (err) { res.writeHead(404); res.end('404 Not Found'); return; }
@@ -115,24 +135,52 @@ function serveFile(res, filePath, mime) {
   });
 }
 
-// ── API ──────────────────────────────────────
+function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => resolve(body));
+    req.on('error', reject);
+  });
+}
+
+function authenticateAdmin(req) {
+  // 從 request body 中解析密碼
+  // 實際驗證在 handleAPI 中透過 pool query 處理
+  return true;
+}
+
 async function handleAPI(req, res, url) {
   const u = new URL(url, 'http://x');
   const pathname = u.pathname;
-  let body = '';
-  req.on('data', c => body += c);
+  const body = await parseBody(req);
+  let json = {};
+  try { json = JSON.parse(body || '{}'); } catch {}
 
+  // 通用密碼驗證
+  const checkAuth = async (pwd, requireSuper) => {
+    if (!process.env.DATABASE_URL) return { ok: true, role: 'super' };
+    const p = getPool();
+    const r = await p.query('SELECT password_hash, role FROM admin LIMIT 1');
+    if (r.rows.length === 0) return { ok: false, role: null };
+    const match = verifyPassword(pwd, r.rows[0].password_hash);
+    if (!match) return { ok: false, role: null };
+    if (requireSuper && r.rows[0].role !== 'super') return { ok: false, role: 'normal', message: '需要超級管理者權限' };
+    return { ok: true, role: r.rows[0].role };
+  };
+
+  // GET /api/data — 公開
   if (req.method === 'GET' && pathname === '/api/data') {
     if (!process.env.DATABASE_URL) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ currentCall: 0, announcements: ['系統初始化中...'], lastUpdated: null }));
+      res.end(JSON.stringify({ currentCall: 0, announcements: [], lastUpdated: null }));
       return;
     }
     try {
       const p = getPool();
       const [callRes, annRes] = await Promise.all([
         p.query('SELECT current_call, event_image, last_updated FROM blood_data ORDER BY id DESC LIMIT 1'),
-        p.query('SELECT id, content FROM announcements ORDER BY sort_order'),
+        p.query('SELECT id, content FROM announcements ORDER BY sort_order, id'),
       ]);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
@@ -148,26 +196,20 @@ async function handleAPI(req, res, url) {
     return;
   }
 
-  const authenticate = async (pwd) => {
-    if (!process.env.DATABASE_URL) return true;
-    const p = getPool();
-    const r = await p.query('SELECT password_hash FROM admin LIMIT 1');
-    return r.rows.length > 0 && verifyPassword(pwd, r.rows[0].password_hash);
-  };
-
+  // POST /api/login
   if (req.method === 'POST' && pathname === '/api/login') {
-    await new Promise(r => req.on('end', r));
-    const { password: pwd } = JSON.parse(body || '{}');
-    const ok = await authenticate(pwd);
+    const { password } = json;
+    const auth = await checkAuth(password, false);
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok, message: ok ? '登入成功' : '密碼錯誤' }));
+    res.end(JSON.stringify({ ok: auth.ok, message: auth.message || (auth.ok ? '登入成功' : '密碼錯誤'), role: auth.role }));
     return;
   }
 
+  // POST /api/update-call — 所有管理者可用
   if (req.method === 'POST' && pathname === '/api/update-call') {
-    await new Promise(r => req.on('end', r));
-    const { call, password: pwd } = JSON.parse(body || '{}');
-    if (!await authenticate(pwd)) {
+    const { call, password: pwd } = json;
+    const auth = await checkAuth(pwd, false);
+    if (!auth.ok) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: false, message: '密碼錯誤' }));
       return;
@@ -179,18 +221,35 @@ async function handleAPI(req, res, url) {
     return;
   }
 
-  if (req.method === 'POST' && pathname === '/api/update-announcements') {
-    await new Promise(r => req.on('end', r));
-    const { announcements, password: pwd } = JSON.parse(body || '{}');
-    if (!await authenticate(pwd)) {
+  // POST /api/update-event-image — 需超級管理者
+  if (req.method === 'POST' && pathname === '/api/update-event-image') {
+    const { eventImage, password: pwd } = json;
+    const auth = await checkAuth(pwd, true);
+    if (!auth.ok) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: false, message: '密碼錯誤' }));
+      res.end(JSON.stringify({ ok: false, message: auth.message || '密碼錯誤' }));
+      return;
+    }
+    const p = getPool();
+    await p.query('UPDATE blood_data SET event_image=$1, last_updated=NOW() WHERE id=1', [eventImage || '']);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
+  // POST /api/update-announcements — 需超級管理者
+  if (req.method === 'POST' && pathname === '/api/update-announcements') {
+    const { announcements: anns, password: pwd } = json;
+    const auth = await checkAuth(pwd, true);
+    if (!auth.ok) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, message: auth.message || '密碼錯誤' }));
       return;
     }
     const p = getPool();
     await p.query('DELETE FROM announcements');
-    for (let i = 0; i < announcements.length; i++) {
-      const v = (announcements[i] || '').trim();
+    for (let i = 0; i < anns.length; i++) {
+      const v = (anns[i] || '').trim();
       if (v) await p.query('INSERT INTO announcements (content, sort_order) VALUES ($1, $2)', [v, i + 1]);
     }
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -198,12 +257,18 @@ async function handleAPI(req, res, url) {
     return;
   }
 
+  // POST /api/update-password — 需超級管理者
   if (req.method === 'POST' && pathname === '/api/update-password') {
-    await new Promise(r => req.on('end', r));
-    const { oldPassword, newPassword, password: pwd } = JSON.parse(body || '{}');
-    if (!await authenticate(pwd)) {
+    const { newPassword, oldPassword, password: pwd } = json;
+    const auth = await checkAuth(pwd, true);
+    if (!auth.ok) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: false, message: '密碼錯誤' }));
+      res.end(JSON.stringify({ ok: false, message: auth.message || '密碼錯誤' }));
+      return;
+    }
+    if (!newPassword || newPassword.length < 4) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, message: '新密碼至少4位' }));
       return;
     }
     const p = getPool();
@@ -214,19 +279,32 @@ async function handleAPI(req, res, url) {
     return;
   }
 
-  res.writeHead(404); res.end(JSON.stringify({ error: 'not found' }));
+  res.writeHead(404);
+  res.end(JSON.stringify({ error: 'not found' }));
 }
 
-// ── 主伺服器 ──────────────────────────────────
 const server = http.createServer(async (req, res) => {
   const url = req.url.split('?')[0];
-  if (url.startsWith('/api/')) { await handleAPI(req, res, req.url); return; }
-  if (url === '/' || url === '/index.html') { serveFile(res, path.join(PUBLIC_DIR, 'index.html'), 'text/html; charset=utf-8'); return; }
-  if (url === '/admin' || url === '/admin.html' || url === '/admin/') { serveFile(res, path.join(ADMIN_DIR, 'index.html'), 'text/html; charset=utf-8'); return; }
+  if (url.startsWith('/api/')) {
+    await handleAPI(req, res, req.url);
+    return;
+  }
+  if (url === '/' || url === '/index.html') {
+    serveFile(res, path.join(PUBLIC_DIR, 'index.html'), 'text/html; charset=utf-8');
+    return;
+  }
+  if (url === '/admin' || url === '/admin.html' || url === '/admin/') {
+    serveFile(res, path.join(ADMIN_DIR, 'index.html'), 'text/html; charset=utf-8');
+    return;
+  }
   const ext = path.extname(url);
   const mime = MIME[ext] || 'application/octet-stream';
   const filePath = path.join(__dirname, url);
-  if (!filePath.startsWith(__dirname)) { res.writeHead(403); res.end('Forbidden'); return; }
+  if (!filePath.startsWith(__dirname)) {
+    res.writeHead(403);
+    res.end('Forbidden');
+    return;
+  }
   serveFile(res, filePath, mime);
 });
 
