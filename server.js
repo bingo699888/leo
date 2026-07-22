@@ -180,9 +180,31 @@ async function handleAPI(req, res, url) {
   }
 
   if (req.method === 'POST' && pathname === '/api/login') {
-    const auth = await checkAuth(false);
+    const loginPwd = json.password || '';
+    // 依帳號名稱查詢（支援多帳號）
+    if (!process.env.DATABASE_URL) {
+      const ok = loginPwd === '0000';
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok, message: ok ? '登入成功' : '密碼錯誤', role: ok ? 'super' : null }));
+      return;
+    }
+    const p = getPool();
+    // 先用 username 查（如果有的話），否則查第一筆
+    let r;
+    if (json.username) {
+      r = await p.query('SELECT password_hash, role FROM admin WHERE username=$1 LIMIT 1', [json.username]);
+    }
+    if (!r || r.rows.length === 0) {
+      r = await p.query('SELECT password_hash, role FROM admin LIMIT 1');
+    }
+    if (r.rows.length === 0) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, message: '帳號不存在', role: null }));
+      return;
+    }
+    const match = verifyPassword(loginPwd, r.rows[0].password_hash);
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok: auth.ok, message: auth.ok ? '登入成功' : '密碼錯誤', role: auth.role }));
+    res.end(JSON.stringify({ ok: match, message: match ? '登入成功' : '密碼錯誤', role: match ? r.rows[0].role : null }));
     return;
   }
 
