@@ -119,17 +119,8 @@ function serveFile(res, filePath, mime) {
 }
 
 // 讀取原始 body（文字用）
-function parseBody(req) {
-  return new Promise((resolve) => {
-    let body = '';
-    req.setEncoding('utf8');
-    req.on('data', c => body += c);
-    req.on('end', () => resolve(body));
-  });
-}
-
-// 讀取原始 buffer body（二進制用）
-function parseBodyRaw(req) {
+// 統一用 binary 讀取，再自行解碼
+function getReqBody(req) {
   return new Promise((resolve) => {
     const chunks = [];
     req.on('data', c => chunks.push(c));
@@ -140,9 +131,9 @@ function parseBodyRaw(req) {
 async function handleAPI(req, res, url) {
   const u = new URL(url, 'http://x');
   const pathname = u.pathname;
-  const body = await parseBody(req);
+  const rawBody = await getReqBody(req);
   const contentType = req.headers['content-type'] || '';
-
+  const body = rawBody.toString('utf8');
   let json = {};
   try { json = JSON.parse(body || '{}'); } catch {}
 
@@ -231,19 +222,13 @@ async function handleAPI(req, res, url) {
 
   // POST /api/upload-image — 直接存 Railway 本地（二進制安全）
   if (req.method === 'POST' && pathname === '/api/upload-image') {
-    // 先用文字模式讀取密碼
-    const textBody = await parseBody(req);
     let pwdForAuth = '';
-    let boundary = '';
     let imageData = null;
     let imageFilename = 'event.jpg';
 
     // 從 header 取得 boundary
-    boundary = contentType.split('boundary=')[1];
+    const boundary = contentType.split('boundary=')[1];
     if (!boundary) { res.writeHead(400); res.end(JSON.stringify({ ok: false, message: 'no boundary' })); return; }
-
-    // 用 binary 模式重新讀取完整 body
-    const rawBody = await parseBodyRaw(req);
     const boundaryBuffer = Buffer.from('--' + boundary);
     const boundaryEnd = Buffer.from('--' + boundary + '--');
 
