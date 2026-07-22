@@ -29,34 +29,45 @@ async function initDB() {
   const p = getPool();
   const client = await p.connect();
   try {
+    // 建立 blood_data（含 event_image）
     await client.query(`
       CREATE TABLE IF NOT EXISTS blood_data (
         id SERIAL PRIMARY KEY,
         current_call INTEGER DEFAULT 0,
         event_image TEXT,
         last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+      )
     `);
-    // Migration: add event_image if missing (PostgreSQL 12 compatible)
+    // Migration: 確認 event_image 欄位存在
     try {
-      const colCheck = await client.query(`SELECT column_name FROM information_schema.columns WHERE table_name='blood_data' AND column_name='event_image'`);
+      const colCheck = await client.query(
+        `SELECT column_name FROM information_schema.columns WHERE table_name='blood_data' AND column_name='event_image'`
+      );
       if (colCheck.rows.length === 0) {
         await client.query(`ALTER TABLE blood_data ADD COLUMN event_image TEXT`);
         console.log('✅ event_image 欄位已新增');
       }
     } catch(e) { console.log('欄位檢查略過:', e.message); }
+
+    // 建立 announcements
+    await client.query(`
       CREATE TABLE IF NOT EXISTS announcements (
         id SERIAL PRIMARY KEY,
         content TEXT NOT NULL,
         sort_order INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+      )
+    `);
+
+    // 建立 admin
+    await client.query(`
       CREATE TABLE IF NOT EXISTS admin (
         id SERIAL PRIMARY KEY,
         password_hash TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+      )
     `);
+
     const c = await client.query('SELECT COUNT(*) FROM blood_data');
     if (parseInt(c.rows[0].count) === 0) {
       await client.query('INSERT INTO blood_data (current_call) VALUES (0)');
