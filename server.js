@@ -37,10 +37,14 @@ async function initDB() {
         last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    // Migration: add event_image if missing
+    // Migration: add event_image if missing (PostgreSQL 12 compatible)
     try {
-      await client.query(`ALTER TABLE blood_data ADD COLUMN IF NOT EXISTS event_image TEXT`);
-    } catch(e) { /* ignore if already exists */ }
+      const colCheck = await client.query(`SELECT column_name FROM information_schema.columns WHERE table_name='blood_data' AND column_name='event_image'`);
+      if (colCheck.rows.length === 0) {
+        await client.query(`ALTER TABLE blood_data ADD COLUMN event_image TEXT`);
+        console.log('✅ event_image 欄位已新增');
+      }
+    } catch(e) { console.log('欄位檢查略過:', e.message); }
       CREATE TABLE IF NOT EXISTS announcements (
         id SERIAL PRIMARY KEY,
         content TEXT NOT NULL,
