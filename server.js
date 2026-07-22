@@ -36,6 +36,11 @@ async function initDB() {
         event_image TEXT,
         last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+    // Migration: add event_image if missing
+    try {
+      await client.query(`ALTER TABLE blood_data ADD COLUMN IF NOT EXISTS event_image TEXT`);
+    } catch(e) { /* ignore if already exists */ }
       CREATE TABLE IF NOT EXISTS announcements (
         id SERIAL PRIMARY KEY,
         content TEXT NOT NULL,
