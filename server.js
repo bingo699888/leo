@@ -165,7 +165,7 @@ async function handleAPI(req, res, url) {
   }
 
   // 從 multipart 或 json 中取 admin密碼
-  const adminPwd = formData.admin_password || json.admin_password || '';
+  const adminPwd = formData.admin_password || json.admin_password || json.password || '';
   const checkAuth = async (requireSuper) => {
     if (!process.env.DATABASE_URL) return { ok: true, role: 'super' };
     const p = getPool();
