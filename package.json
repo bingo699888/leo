@@ -6,9 +6,7 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "pg": "^8.11.0",
-    "form-data": "^4.0.0",
-    "axios": "^1.6.0"
+    "pg": "^8.11.0"
   },
   "engines": { "node": ">=18" }
 }
