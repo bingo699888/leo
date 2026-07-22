@@ -118,11 +118,22 @@ function serveFile(res, filePath, mime) {
   });
 }
 
+// 讀取原始 body（文字用）
 function parseBody(req) {
   return new Promise((resolve) => {
     let body = '';
+    req.setEncoding('utf8');
     req.on('data', c => body += c);
     req.on('end', () => resolve(body));
+  });
+}
+
+// 讀取原始 buffer body（二進制用）
+function parseBodyRaw(req) {
+  return new Promise((resolve) => {
+    const chunks = [];
+    req.on('data', c => chunks.push(c));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
   });
 }
 
@@ -218,41 +229,69 @@ async function handleAPI(req, res, url) {
     return;
   }
 
-  // POST /api/upload-image — 直接存 Railway 本地
+  // POST /api/upload-image — 直接存 Railway 本地（二進制安全）
   if (req.method === 'POST' && pathname === '/api/upload-image') {
-    const auth = await checkAuth(true);
-    if (!auth.ok) { res.writeHead(401); res.end(JSON.stringify({ ok: false, message: auth.message || '密碼錯誤' })); return; }
+    // 先用文字模式讀取密碼
+    const textBody = await parseBody(req);
+    let pwdForAuth = '';
+    let boundary = '';
+    let imageData = null;
+    let imageFilename = 'event.jpg';
 
-    // 解析 multipart
-    const boundary = contentType.split('boundary=')[1];
+    // 從 header 取得 boundary
+    boundary = contentType.split('boundary=')[1];
     if (!boundary) { res.writeHead(400); res.end(JSON.stringify({ ok: false, message: 'no boundary' })); return; }
 
-    const parts = body.split('--' + boundary).filter(p => p.trim() && !p.startsWith('--'));
-    let imageField = null;
-    let pwdField = '';
+    // 用 binary 模式重新讀取完整 body
+    const rawBody = await parseBodyRaw(req);
+    const boundaryBuffer = Buffer.from('--' + boundary);
+    const boundaryEnd = Buffer.from('--' + boundary + '--');
 
-    for (const part of parts) {
-      const idx = part.indexOf('\r\n\r\n');
-      if (idx === -1) continue;
-      const partHeader = part.substring(0, idx);
-      const partBody = part.substring(idx + 4, part.length - 2);
-      const nameMatch = partHeader.match(/name="([^"]+)"/);
-      if (!nameMatch) continue;
-      const name = nameMatch[1];
-      if (name === 'image') imageField = partBody;
-      if (name === 'admin_password') pwdField = partBody;
+    // 找各個 part
+    let start = 0;
+    while (start < rawBody.length) {
+      let idx = rawBody.indexOf(boundaryBuffer, start);
+      if (idx === -1) break;
+      idx += boundaryBuffer.length + 2; // skip \r\n
+
+      let end = rawBody.indexOf(boundaryBuffer, idx);
+      if (end === -1) break;
+      const partData = rawBody.slice(idx, end - 2); // trim ending \r\n
+
+      // 找 header 和 body 分隔
+      const headerEndIdx = partData.indexOf(Buffer.from('\r\n\r\n'));
+      if (headerEndIdx === -1) { start = end; continue; }
+      const headerStr = partData.slice(0, headerEndIdx).toString('utf8');
+      const bodyData = partData.slice(headerEndIdx + 4);
+
+      const nameMatch = headerStr.match(/name="([^"]+)"/);
+      const filenameMatch = headerStr.match(/filename="([^"]+)"/);
+      if (!nameMatch) { start = end; continue; }
+      const fieldName = nameMatch[1];
+
+      if (fieldName === 'admin_password') {
+        pwdForAuth = bodyData.toString('utf8').trim();
+      } else if (fieldName === 'image' && filenameMatch) {
+        imageData = bodyData;
+        const fn = filenameMatch[1];
+        const ext = fn.match(/\.([^.]+)$/);
+        imageFilename = 'event_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8) + (ext ? '.' + ext[1] : '.jpg');
+      }
+      start = end;
     }
 
-    if (!imageField) { res.writeHead(400); res.end(JSON.stringify({ ok: false, message: 'no image' })); return; }
+    // 用讀到的密碼做驗證
+    const pForAuth = getPool();
+    const authRow = await pForAuth.query('SELECT password_hash, role FROM admin LIMIT 1');
+    if (authRow.rows.length === 0 || !verifyPassword(pwdForAuth, authRow.rows[0].password_hash) || authRow.rows[0].role !== 'super') {
+      res.writeHead(401); res.end(JSON.stringify({ ok: false, message: '密碼錯誤' })); return;
+    }
+    if (!imageData) { res.writeHead(400); res.end(JSON.stringify({ ok: false, message: '沒有圖片' })); return; }
 
-    // 產生檔名
-    const ext = '.jpg';
-    const filename = 'event_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8) + ext;
-    const filePath = path.join(UPLOAD_DIR, filename);
-    fs.writeFileSync(filePath, Buffer.from(imageField, 'binary'));
-    const imageUrl = '/uploads/' + filename;
+    const filePath = path.join(UPLOAD_DIR, imageFilename);
+    fs.writeFileSync(filePath, imageData);
+    const imageUrl = '/uploads/' + imageFilename;
 
-    // 更新資料庫
     const p = getPool();
     await p.query('UPDATE blood_data SET event_image=$1, last_updated=NOW() WHERE id=1', [imageUrl]);
     res.writeHead(200, { 'Content-Type': 'application/json' });
