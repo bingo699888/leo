@@ -278,6 +278,75 @@ async function handleAPI(req, res, url) {
     return;
   }
 
+  // POST /api/admin/users — 新增一般管理者（超級管理者專用）
+  if (req.method === 'POST' && pathname === '/api/admin/users') {
+    const { username, password: pwd, role } = json;
+    const auth = await checkAuth(pwd, true);
+    if (!auth.ok) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, message: auth.message || '密碼錯誤' }));
+      return;
+    }
+    if (!username || username.length < 2 || !role) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, message: '帳號和角色必填' }));
+      return;
+    }
+    if (!['normal', 'super'].includes(role)) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, message: '角色必須是 normal 或 super' }));
+      return;
+    }
+    const newHash = crypto.createHash('sha256').update(pwd).digest('hex');
+    const p = getPool();
+    try {
+      await p.query('INSERT INTO admin (username, password_hash, role) VALUES ($1, $2, $3)', [username, newHash, role]);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, message: '管理者已新增' }));
+    } catch(e) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, message: '帳號已存在或其他錯誤' }));
+    }
+    return;
+  }
+
+  // GET /api/admin/users — 列出所有管理者（超級管理者專用）
+  if (req.method === 'GET' && pathname === '/api/admin/users') {
+    const auth = await checkAuth(json.password || (json.password === '' ? '' : null), true);
+    // 從 query string 取密碼
+    const u = new URL(req.url, 'http://x');
+    const pwd = u.searchParams.get('password');
+    const auth2 = await checkAuth(pwd, true);
+    if (!auth2.ok) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: '未授權' }));
+      return;
+    }
+    const p = getPool();
+    const r = await p.query('SELECT id, username, role, created_at FROM admin ORDER BY id');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ users: r.rows }));
+    return;
+  }
+
+  // DELETE /api/admin/users/:id — 刪除管理者（超級管理者專用）
+  if (req.method === 'DELETE' && pathname.startsWith('/api/admin/users/')) {
+    const u = new URL(req.url, 'http://x');
+    const pwd = u.searchParams.get('password');
+    const auth = await checkAuth(pwd, true);
+    if (!auth.ok) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, message: '密碼錯誤' }));
+      return;
+    }
+    const id = pathname.split('/').pop();
+    const p = getPool();
+    await p.query('DELETE FROM admin WHERE id=$1', [id]);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
   res.writeHead(404);
   res.end(JSON.stringify({ error: 'not found' }));
 }
@@ -315,3 +384,5 @@ const server = http.createServer(async (req, res) => {
     console.log('🔧 管理後台：http://0.0.0.0:' + PORT + '/admin');
   });
 })();
+
+// 預留：新增管理者 API（由 initDB 後自動加入）

@@ -139,6 +139,52 @@
     .msg.ok { color: #2e7d32; background: #e8f5e9; }
     .msg.err { color: #c62828; background: #ffebee; }
 
+
+    .user-item {
+      display: flex; align-items: center; gap: 8px;
+      background: #f5f5f5; border-radius: 10px; padding: 10px 14px; margin-bottom: 8px;
+    }
+    .user-item .info { flex: 1; }
+    .user-item .name { font-size: 14px; font-weight: bold; color: #333; }
+    .user-item .role-tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-left: 6px; }
+    .user-item .role-tag.super { background: #fff3e0; color: #e65100; }
+    .user-item .role-tag.normal { background: #e3f2fd; color: #1565c0; }
+    .user-item .del-btn {
+      padding: 6px 12px; background: #ffebee; color: #c62828;
+      border: none; border-radius: 8px; cursor: pointer; font-size: 14px;
+    }
+    .user-item .del-btn:hover { background: #ffcdd2; }
+    .user-item .del-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .add-user-btn {
+      width: 100%; padding: 14px; background: white; color: #666;
+      border: 2px dashed #ccc; border-radius: 12px; cursor: pointer; font-size: 14px;
+      margin-top: 8px;
+    }
+    .add-user-btn:hover { border-color: #c62828; color: #c62828; }
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: white; border-radius: 20px; padding: 32px; width: 90%; max-width: 400px;
+    }
+    .modal-box h3 { font-size: 18px; margin-bottom: 20px; text-align: center; }
+    .modal-box input, .modal-box select {
+      width: 100%; padding: 12px; border: 2px solid #e0e0e0;
+      border-radius: 10px; font-size: 14px; margin-bottom: 12px; outline: none; box-sizing: border-box;
+    }
+    .modal-box input:focus, .modal-box select:focus { border-color: #c62828; }
+    .modal-box .btn-row { display: flex; gap: 10px; }
+    .modal-box .btn-cancel {
+      flex: 1; padding: 14px; background: #f5f5f5; color: #666;
+      border: none; border-radius: 12px; cursor: pointer; font-size: 15px;
+    }
+    .modal-box .btn-confirm {
+      flex: 1; padding: 14px; background: #c62828; color: white;
+      border: none; border-radius: 12px; cursor: pointer; font-size: 15px; font-weight: bold;
+    }
+
     /* 密碼變更 */
     .password-section { margin-top: 24px; }
     .password-row { display: flex; gap: 8px; margin-bottom: 8px; }
@@ -222,8 +268,18 @@
       <button class="save-btn" id="saveBtn" onclick="saveAll()">💾 儲存所有變更</button>
       <div class="msg" id="saveMsg"></div>
 
+
+      <!-- 帳號管理（超級管理者） -->
+      <div class="card super-only" id="userSection" style="display:none;">
+        <div class="card-title">👥 帳號管理</div>
+        <div id="userList"></div>
+        <button class="add-user-btn" onclick="showAddUserModal()">＋ 新增管理者帳號</button>
+      </div>
+
       <!-- 超級管理者：密碼變更 -->
       <div class="password-section super-only" id="pwdSection" style="display:none;">
+        <div class="card-title">🔐 變更密碼（超級管理者）</div>
+
         <div class="card-title">🔐 變更密碼（超級管理者）</div>
         <div class="password-row">
           <input type="password" id="oldPwdInput" placeholder="舊密碼">
@@ -262,6 +318,7 @@
 
       if (currentRole === 'super') {
         document.querySelectorAll('.super-only').forEach(el => el.style.display = 'block');
+        loadUsers();
       } else {
         document.querySelectorAll('.super-only').forEach(el => el.style.display = 'none');
       }
@@ -424,5 +481,24 @@
     setTimeout(() => { msg.textContent = ''; }, 3000);
   }
 </script>
+
+<!-- 新增帳號 Modal -->
+<div class="modal-overlay" id="addUserModal">
+  <div class="modal-box">
+    <h3>＋ 新增管理者帳號</h3>
+    <input type="text" id="newUsername" placeholder="帳號名稱（英文或數字）">
+    <input type="password" id="newUserPwd" placeholder="登入密碼（至少4位）">
+    <select id="newUserRole">
+      <option value="normal">👤 一般管理者（只能輸入號碼）</option>
+      <option value="super">⭐ 超級管理者（全部功能）</option>
+    </select>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="closeAddUserModal()">取消</button>
+      <button class="btn-confirm" onclick="doAddUser()">新增</button>
+    </div>
+    <div class="msg" id="addUserMsg" style="margin-top:12px;"></div>
+  </div>
+</div>
+
 </body>
 </html>
