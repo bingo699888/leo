@@ -1,2 +1,0 @@
-// 在 initDB() 的 CREATE TABLE 後面加一行 Migration
-// 把 "await client.query(`CREATE TABLE IF NOT EXISTS blood_data..." 整段替換成下面這個版本：
