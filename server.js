@@ -142,7 +142,7 @@ async function handleAPI(req, res, url) {
   const checkAuth = async (requireSuper) => {
     if (!process.env.DATABASE_URL) return { ok: true, role: 'super' };
     const p = getPool();
-    const r = await p.query('SELECT password_hash, role FROM admin LIMIT 1');
+    const r = await p.query('SELECT password_hash, role FROM admin ORDER BY CASE WHEN role=$1 THEN 0 ELSE 1 END LIMIT 1', ['super']);
     if (r.rows.length === 0) return { ok: false, role: null };
     const match = verifyPassword(adminPwd, r.rows[0].password_hash);
     if (!match) return { ok: false, role: null };
