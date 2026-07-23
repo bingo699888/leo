@@ -191,7 +191,7 @@ async function handleAPI(req, res, url) {
       return;
     }
     const p = getPool();
-    // 先用 username 查（如果有的話），否則查第一筆
+    // 用 username 查（有的話），否則找 super admin
     let r;
     if (json.username) {
       r = await p.query('SELECT password_hash, role FROM admin WHERE username=$1 LIMIT 1', [json.username]);

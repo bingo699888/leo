@@ -219,6 +219,7 @@
   <div class="login-card" id="loginCard">
     <div class="logo">🩸</div>
     <h2>管理後台登入</h2>
+    <input type="text" id="usernameInput" placeholder="帳號（可空白）" onkeydown="if(event.key==='Enter')doLogin()">
     <input type="password" id="passwordInput" placeholder="請輸入管理密碼" onkeydown="if(event.key==='Enter')doLogin()">
     <button onclick="doLogin()">登 入</button>
     <div class="login-error" id="loginError"></div>
@@ -335,12 +336,13 @@
   let pendingImageFile = null;
 
   async function doLogin() {
+    const username = document.getElementById('usernameInput').value.trim();
     const pwd = document.getElementById('passwordInput').value;
     if (!pwd) return;
     const resp = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: pwd })
+      body: JSON.stringify({ username: username || undefined, password: pwd })
     });
     const r = await resp.json();
     if (r.ok) {
