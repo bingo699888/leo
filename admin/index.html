@@ -414,13 +414,6 @@
   async function updateCall() {
     const val = parseInt(document.getElementById('newCallInput').value);
     if (!val || val <= 0) return;
-    if (currentRole !== 'super') {
-      const msg = document.getElementById('saveMsg');
-      msg.textContent = '⚠️ 只有超級管理者才能更新叫號';
-      msg.className = 'msg err';
-      setTimeout(() => { msg.textContent = ''; }, 3000);
-      return;
-    }
     const resp = await fetch('/api/update-call', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
