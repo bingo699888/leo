@@ -412,10 +412,11 @@
   async function updateCall() {
     const val = parseInt(document.getElementById('newCallInput').value);
     if (!val || val <= 0) return;
-    const formData = new FormData();
-    formData.append('call', val);
-    formData.append('admin_password', password);
-    const resp = await fetch('/api/update-call', { method: 'POST', body: formData });
+    const resp = await fetch('/api/update-call', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ call: val, admin_password: password })
+    });
     const r = await resp.json();
     const msg = document.getElementById('saveMsg');
     if (r.ok) {
@@ -483,10 +484,11 @@
   async function saveImageUrl() {
     const url = document.getElementById('imageUrlInput').value.trim();
     eventImage = url;
-    const formData = new FormData();
-    formData.append('event_image', url);
-    formData.append('admin_password', password);
-    const resp = await fetch('/api/update-event-image', { method: 'POST', body: formData });
+    const resp = await fetch('/api/update-event-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventImage: url, admin_password: password })
+    });
     const r = await resp.json();
     const msgEl = document.getElementById('uploadMsg');
     if (r.ok) {
@@ -506,10 +508,11 @@
       const v = el.value.trim();
       if (v) announcements.push(v);
     });
-    const formData = new FormData();
-    formData.append('announcements', JSON.stringify(announcements));
-    formData.append('admin_password', password);
-    const resp = await fetch('/api/update-announcements', { method: 'POST', body: formData });
+    const resp = await fetch('/api/update-announcements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ announcements, admin_password: password })
+    });
     const r = await resp.json();
     const msg = document.getElementById('saveMsg');
     if (r.ok) {
@@ -535,7 +538,7 @@
     const resp = await fetch('/api/update-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ oldPassword: oldPwd, newPassword: newPwd, admin_password: password })
+      body: JSON.stringify({ oldPassword: oldPwd, newPassword: newPwd, password: password })
     });
     const r = await resp.json();
     const m = document.getElementById('pwdMsg');
