@@ -324,7 +324,7 @@ async function handleAPI(req, res, url) {
   if (req.method === 'GET' && pathname === '/api/admin/users') {
     const pwd = u.searchParams.get('admin_password') || '';
     const p2 = getPool();
-    const r2 = await p2.query('SELECT password_hash, role FROM admin LIMIT 1');
+    const r2 = await p2.query('SELECT password_hash, role FROM admin ORDER BY CASE WHEN role=$1 THEN 0 ELSE 1 END LIMIT 1', ['super']);
     if (r2.rows.length === 0 || !verifyPassword(pwd, r2.rows[0].password_hash) || r2.rows[0].role !== 'super') {
       res.writeHead(401); res.end(JSON.stringify({ error: '未授權' })); return;
     }
@@ -356,7 +356,7 @@ async function handleAPI(req, res, url) {
   if (req.method === 'DELETE' && pathname.startsWith('/api/admin/users/')) {
     const pwd = u.searchParams.get('admin_password') || '';
     const p2 = getPool();
-    const r2 = await p2.query('SELECT password_hash, role FROM admin LIMIT 1');
+    const r2 = await p2.query('SELECT password_hash, role FROM admin ORDER BY CASE WHEN role=$1 THEN 0 ELSE 1 END LIMIT 1', ['super']);
     if (r2.rows.length === 0 || !verifyPassword(pwd, r2.rows[0].password_hash) || r2.rows[0].role !== 'super') {
       res.writeHead(401); res.end(JSON.stringify({ ok: false, message: '密碼錯誤' })); return;
     }
