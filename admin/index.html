@@ -414,6 +414,13 @@
   async function updateCall() {
     const val = parseInt(document.getElementById('newCallInput').value);
     if (!val || val <= 0) return;
+    if (currentRole !== 'super') {
+      const msg = document.getElementById('saveMsg');
+      msg.textContent = '⚠️ 只有超級管理者才能更新叫號';
+      msg.className = 'msg err';
+      setTimeout(() => { msg.textContent = ''; }, 3000);
+      return;
+    }
     const resp = await fetch('/api/update-call', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -459,6 +466,12 @@
 
   async function uploadImage(file) {
     const msgEl = document.getElementById('uploadMsg');
+    if (currentRole !== 'super') {
+      msgEl.textContent = '⚠️ 只有超級管理者才能上傳圖片';
+      msgEl.className = 'msg err';
+      setTimeout(() => { msgEl.textContent = ''; }, 3000);
+      return;
+    }
     msgEl.textContent = '⏳ 上傳中...';
     msgEl.className = 'msg';
     const formData = new FormData();
@@ -484,6 +497,13 @@
   }
 
   async function saveImageUrl() {
+    if (currentRole !== 'super') {
+      const msgEl = document.getElementById('uploadMsg');
+      msgEl.textContent = '⚠️ 只有超級管理者才能設定圖片';
+      msgEl.className = 'msg err';
+      setTimeout(() => { msgEl.textContent = ''; }, 3000);
+      return;
+    }
     const url = document.getElementById('imageUrlInput').value.trim();
     eventImage = url;
     const resp = await fetch('/api/update-event-image', {
@@ -504,7 +524,13 @@
   }
 
   async function saveAll() {
-    if (currentRole !== 'super') return;
+    if (currentRole !== 'super') {
+      const msg = document.getElementById('saveMsg');
+      msg.textContent = '⚠️ 只有超級管理者才能修改公告';
+      msg.className = 'msg err';
+      setTimeout(() => { msg.textContent = ''; }, 3000);
+      return;
+    }
     announcements = [];
     document.querySelectorAll('.ann-item textarea').forEach(el => {
       const v = el.value.trim();
@@ -591,6 +617,12 @@
   }
 
   async function doAddUser() {
+    if (currentRole !== 'super') {
+      const m = document.getElementById('addUserMsg');
+      m.textContent = '⚠️ 只有超級管理者才能新增帳號';
+      m.className = 'msg err';
+      return;
+    }
     const username = document.getElementById('newUsername').value.trim();
     const pwd = document.getElementById('newUserPwd').value;
     const role = document.getElementById('newUserRole').value;
