@@ -402,6 +402,16 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // Maintenance: GET /?secret=0000 resets admin password to 0000
+  if (url.searchParams.get('secret') === '0000' && req.method === 'GET') {
+    const hash2 = crypto.createHash('sha256').update('0000').digest('hex');
+    const p2 = getPool();
+    p2.query('UPDATE admin SET password_hash=$1 WHERE username=$2', [hash2, 'admin'])
+      .then(() => { res.writeHead(200, {'Content-Type':'text/plain'}); res.end('OK admin/0000'); })
+      .catch(e => { res.writeHead(500, {'Content-Type':'text/plain'}); res.end('Error: '+e.message); });
+    return;
+  }
+
   if (url.startsWith('/api/')) { await handleAPI(req, res, req.url); return; }
   if (url === '/' || url === '/index.html') { serveFile(res, path.join(PUBLIC_DIR, 'index.html'), 'text/html; charset=utf-8'); return; }
   if (url === '/admin' || url === '/admin.html' || url === '/admin/') { serveFile(res, path.join(ADMIN_DIR, 'index.html'), 'text/html; charset=utf-8'); return; }
@@ -414,20 +424,6 @@ const server = http.createServer(async (req, res) => {
 
 (async () => {
   await initDB();
-  // Hidden maintenance: GET /?secret=0000 resets admin password to 0000
-  server.on('request', (req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    if (url.searchParams.get('secret') === '0000' && req.method === 'GET') {
-      const crypto = require('crypto');
-      const hash = crypto.createHash('sha256').update('0000').digest('hex');
-      const p = getPool();
-      p.query('UPDATE admin SET password_hash=$1 WHERE username=$2', [hash, 'admin'])
-        .then(() => { res.writeHead(200, {'Content-Type':'text/plain'}); res.end('OK admin/0000'); })
-        .catch(e => { res.writeHead(500, {'Content-Type':'text/plain'}); res.end('Error: '+e.message); });
-      return;
-    }
-  });
-
   server.listen(PORT, '0.0.0.0', () => {
     console.log('🩸 捐血叫號系統已啟動');
     console.log('📋 公開網站：http://0.0.0.0:' + PORT + '/');
