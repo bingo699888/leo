@@ -139,10 +139,16 @@ async function handleAPI(req, res, url) {
 
   const adminPwd = json.admin_password || json.password || '';
 
-  const checkAuth = async (requireSuper) => {
+  const checkAuth = async (requireSuper, username) => {
     if (!process.env.DATABASE_URL) return { ok: true, role: 'super' };
     const p = getPool();
-    const r = await p.query('SELECT password_hash, role FROM admin ORDER BY CASE WHEN role=$1 THEN 0 ELSE 1 END LIMIT 1', ['super']);
+    let r;
+    if (username) {
+      r = await p.query('SELECT password_hash, role FROM admin WHERE username=$1 LIMIT 1', [username]);
+    }
+    if (!r || r.rows.length === 0) {
+      r = await p.query('SELECT password_hash, role FROM admin ORDER BY CASE WHEN role=$1 THEN 0 ELSE 1 END LIMIT 1', ['super']);
+    }
     if (r.rows.length === 0) return { ok: false, role: null };
     const match = verifyPassword(adminPwd, r.rows[0].password_hash);
     if (!match) return { ok: false, role: null };
@@ -211,7 +217,7 @@ async function handleAPI(req, res, url) {
   }
 
   if (req.method === 'POST' && pathname === '/api/update-call') {
-    const auth = await checkAuth(false);
+    const auth = await checkAuth(false, json.username);
     if (!auth.ok) { res.writeHead(401); res.end(JSON.stringify({ ok: false, message: '密碼錯誤' })); return; }
     const p = getPool();
     await p.query('UPDATE blood_data SET current_call=$1, last_updated=NOW() WHERE id=1', [parseInt(json.call) || 0]);
@@ -285,7 +291,7 @@ async function handleAPI(req, res, url) {
   }
 
   if (req.method === 'POST' && pathname === '/api/update-event-image') {
-    const auth = await checkAuth(true);
+    const auth = await checkAuth(true, json.username);
     if (!auth.ok) { res.writeHead(401); res.end(JSON.stringify({ ok: false, message: auth.message || '密碼錯誤' })); return; }
     const p = getPool();
     await p.query('UPDATE blood_data SET event_image=$1, last_updated=NOW() WHERE id=1', [json.eventImage || '']);
@@ -295,7 +301,7 @@ async function handleAPI(req, res, url) {
   }
 
   if (req.method === 'POST' && pathname === '/api/update-announcements') {
-    const auth = await checkAuth(true);
+    const auth = await checkAuth(true, json.username);
     if (!auth.ok) { res.writeHead(401); res.end(JSON.stringify({ ok: false, message: auth.message || '密碼錯誤' })); return; }
     const anns = json.announcements || [];
     const p = getPool();
@@ -310,7 +316,7 @@ async function handleAPI(req, res, url) {
   }
 
   if (req.method === 'POST' && pathname === '/api/update-password') {
-    const auth = await checkAuth(true);
+    const auth = await checkAuth(true, json.username);
     if (!auth.ok) { res.writeHead(401); res.end(JSON.stringify({ ok: false, message: auth.message || '密碼錯誤' })); return; }
     if (!json.newPassword || json.newPassword.length < 4) { res.writeHead(400); res.end(JSON.stringify({ ok: false, message: '新密碼至少4位' })); return; }
     const p = getPool();
@@ -336,7 +342,7 @@ async function handleAPI(req, res, url) {
   }
 
   if (req.method === 'POST' && pathname === '/api/admin/users') {
-    const auth = await checkAuth(true);
+    const auth = await checkAuth(true, json.username);
     if (!auth.ok) { res.writeHead(401); res.end(JSON.stringify({ ok: false, message: auth.message || '密碼錯誤' })); return; }
     if (!json.username || json.username.length < 2) { res.writeHead(400); res.end(JSON.stringify({ ok: false, message: '帳號至少2個字元' })); return; }
     if (!json.password || json.password.length < 4) { res.writeHead(400); res.end(JSON.stringify({ ok: false, message: '密碼至少4位' })); return; }
