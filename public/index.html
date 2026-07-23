@@ -98,12 +98,16 @@
 
   async function loadData() {
     try {
-      const resp = await fetch('/api/data?_=' + Date.now());
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const resp = await fetch('/api/data?_=' + Date.now(), { signal: controller.signal });
+      clearTimeout(timeout);
       if (!resp.ok) throw new Error('network error');
       const d = await resp.json();
       updateUI(d);
+      document.getElementById('updateInfo').textContent = '✅ 最後更新：刚刚';
     } catch(e) {
-      document.getElementById('updateInfo').textContent = '⚠️ 無法取得資料';
+      document.getElementById('updateInfo').textContent = '⚠️ 無法取得資料 (' + e.message + ')';
     }
   }
 
