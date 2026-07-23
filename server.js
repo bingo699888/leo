@@ -197,7 +197,7 @@ async function handleAPI(req, res, url) {
       r = await p.query('SELECT password_hash, role FROM admin WHERE username=$1 LIMIT 1', [json.username]);
     }
     if (!r || r.rows.length === 0) {
-      r = await p.query('SELECT password_hash, role FROM admin LIMIT 1');
+      r = await p.query("SELECT password_hash, role FROM admin ORDER BY CASE WHEN role='super' THEN 0 ELSE 1 END LIMIT 1");
     }
     if (r.rows.length === 0) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -267,7 +267,7 @@ async function handleAPI(req, res, url) {
 
     // 用讀到的密碼做驗證
     const pForAuth = getPool();
-    const authRow = await pForAuth.query('SELECT password_hash, role FROM admin LIMIT 1');
+    const authRow = await pForAuth.query("SELECT password_hash, role FROM admin ORDER BY CASE WHEN role='super' THEN 0 ELSE 1 END LIMIT 1");
     if (authRow.rows.length === 0 || !verifyPassword(pwdForAuth, authRow.rows[0].password_hash) || authRow.rows[0].role !== 'super') {
       res.writeHead(401); res.end(JSON.stringify({ ok: false, message: '密碼錯誤' })); return;
     }
