@@ -330,6 +330,7 @@
 <script>
   let password = '';
   let currentRole = 'normal';
+  let currentUsername = '';
   let currentCall = 0;
   let announcements = [];
   let eventImage = '';
@@ -348,6 +349,7 @@
     if (r.ok) {
       password = pwd;
       currentRole = r.role || 'normal';
+      currentUsername = username;
       document.getElementById('loginCard').style.display = 'none';
       document.getElementById('adminPanel').classList.add('active');
       document.getElementById('roleBadge').textContent =
@@ -417,7 +419,7 @@
     const resp = await fetch('/api/update-call', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ call: val, admin_password: password })
+      body: JSON.stringify({ call: val, username: currentUsername, admin_password: password })
     });
     const r = await resp.json();
     const msg = document.getElementById('saveMsg');
@@ -502,7 +504,7 @@
     const resp = await fetch('/api/update-event-image', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ eventImage: url, admin_password: password })
+      body: JSON.stringify({ eventImage: url, username: currentUsername, admin_password: password })
     });
     const r = await resp.json();
     const msgEl = document.getElementById('uploadMsg');
@@ -532,7 +534,7 @@
     const resp = await fetch('/api/update-announcements', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ announcements, admin_password: password })
+      body: JSON.stringify({ announcements, username: currentUsername, admin_password: password })
     });
     const r = await resp.json();
     const msg = document.getElementById('saveMsg');
