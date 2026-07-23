@@ -250,6 +250,7 @@
         <div class="call-input-row">
           <input type="number" id="newCallInput" placeholder="輸入新號碼，例如 160">
           <button onclick="updateCall()">更新</button>
+          <button onclick="resetCall()" style="background:#e53935;margin-left:4px;">歸0</button>
         </div>
         <div class="call-note">一般管理者與超級管理者皆可使用</div>
       </div>
@@ -411,6 +412,27 @@
   function delAnn(i) {
     announcements.splice(i, 1);
     renderAnns();
+  }
+
+  async function resetCall() {
+    if (!confirm('確定要歸0嗎？')) return;
+    const resp = await fetch('/api/reset-call', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: currentUsername, admin_password: password })
+    });
+    const r = await resp.json();
+    const msg = document.getElementById('saveMsg');
+    if (r.ok) {
+      document.getElementById('currentCallDisplay').textContent = '0';
+      document.getElementById('newCallInput').value = '';
+      msg.textContent = '✅ 已歸0';
+      msg.className = 'msg';
+    } else {
+      msg.textContent = '⚠️ ' + (r.message || '失敗');
+      msg.className = 'msg err';
+    }
+    setTimeout(() => { msg.textContent = ''; }, 3000);
   }
 
   async function updateCall() {

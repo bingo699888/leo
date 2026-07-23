@@ -226,6 +226,17 @@ async function handleAPI(req, res, url) {
     return;
   }
 
+  // POST /api/reset-call — 歸0（僅超級管理者）
+  if (req.method === 'POST' && pathname === '/api/reset-call') {
+    const auth = await checkAuth(true, json.username);
+    if (!auth.ok) { res.writeHead(401); res.end(JSON.stringify({ ok: false, message: '需要超級管理者權限' })); return; }
+    const p = getPool();
+    await p.query('UPDATE blood_data SET current_call=0, last_updated=NOW() WHERE id=1');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, currentCall: 0 }));
+    return;
+  }
+
   // POST /api/upload-image — 直接存 Railway 本地（二進制安全）
   if (req.method === 'POST' && pathname === '/api/upload-image') {
     let pwdForAuth = '';
